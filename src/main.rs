@@ -73,7 +73,7 @@ impl App {
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let title = Title::from(" Counter App Tutorial ".bold());
+        let title = Title::from(" Jembo Jam Session ".bold());
         let instructions = Title::from(Line::from(vec![
             " Decrement ".into(),
             "<Left>".blue().bold(),
