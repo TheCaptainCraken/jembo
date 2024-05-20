@@ -1,19 +1,14 @@
 use std::io::BufReader;
 use std::{env, fs, io::Error, path::PathBuf};
 
+mod audio;
+
 fn main() -> Result<(), Error> {
     let args: Vec<String> = env::args().collect();
 
     let folder_path = args.get(1).unwrap();
-    let folder = fs::read_dir(folder_path).unwrap();
 
-    let mut files: Vec<PathBuf> = Vec::new();
-
-    for file in folder {
-        files.push(file?.path());
-    }
-
-    println!("{:?}", files);
+    let files = jembo::get_music_files(PathBuf::from(folder_path));
 
     let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
     let sink = rodio::Sink::try_new(&handle).unwrap();
