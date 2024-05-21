@@ -1,5 +1,4 @@
-use std::io::BufReader;
-use std::{env, fs, io::Error, path::PathBuf};
+use std::{env, io::Error, path::PathBuf};
 
 mod audio;
 
@@ -10,18 +9,22 @@ fn main() -> Result<(), Error> {
 
     let files = jembo::get_music_files(PathBuf::from(folder_path));
 
-    let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
-    let sink = rodio::Sink::try_new(&handle).unwrap();
+    let mut queue = audio::queue::Queue::new();
 
-    let file1 = std::fs::File::open(files[1].clone()).unwrap();
-    let file2 = std::fs::File::open(files[1].clone()).unwrap();
-    sink.append(rodio::Decoder::new(BufReader::new(file1)).unwrap());
-    sink.append(rodio::Decoder::new(BufReader::new(file2)).unwrap());
-    std::thread::sleep(std::time::Duration::from_secs(5));
-    sink.pause();
-    std::thread::sleep(std::time::Duration::from_secs(5));
-    sink.play();
-    sink.sleep_until_end();
+    for file in files {
+        queue.add(audio::queue::Track::new(file));
+    }
+
+    queue.play();
+    println!("Now playing {}.", queue.current());
+
+    std::thread::sleep(std::time::Duration::from_secs(30));
+
+    queue.play_next();
+
+    println!("Now playing {}.", queue.current());
+
+    std::thread::sleep(std::time::Duration::from_secs(30));
 
     Ok(())
 }

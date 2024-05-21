@@ -27,10 +27,9 @@ impl AudioPlayer {
         self.sink.set_volume(value);
     }
 
-    pub fn add_track_to_queue(&self, track: Track) {
+    pub fn add_track_to_queue(&self, file: File) {
         self.sink.append(
-            rodio::Decoder::new(BufReader::new(track.file()))
-                .expect("Impossible to decode the file."),
+            rodio::Decoder::new(BufReader::new(file)).expect("Impossible to decode the file."),
         );
     }
 
@@ -66,43 +65,18 @@ impl AudioPlayer {
     }
 }
 
-pub struct Track {
-    name: String,
-    file: File,
-    duration: Duration,
+pub struct AudioPlayerError {
+    message: String,
 }
 
-impl Track {
-    pub fn new(path: PathBuf) -> Self {
-        let file = File::open(&path).expect("Unable to open file.");
-        let name = path
-            .file_name()
-            .expect("Unable to read filename.")
-            .to_str()
-            .expect("Unable to convert filename tu UTF-8")
-            .to_owned();
-        let duration = Duration::from_secs_f64(
-            metadata::MediaFileMetadata::new(&path)
-                .expect("Unable to read metadata")
-                ._duration
-                .expect("Unable to read duration"),
-        );
+impl AudioPlayerError {
+    pub fn message(&self) -> &String {
+        &self.message
+    }
 
-        Track {
-            name,
-            file,
-            duration,
+    pub fn new(message: &str) -> Self {
+        AudioPlayerError {
+            message: message.to_string(),
         }
-    }
-    pub fn duration(&self) -> Duration {
-        self.duration
-    }
-
-    pub fn name(&self) -> String {
-        self.name
-    }
-
-    pub fn file(&self) -> File {
-        self.file
     }
 }
