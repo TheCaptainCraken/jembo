@@ -11,7 +11,7 @@ pub struct Queue {
 impl Queue {
     pub fn new() -> Self {
         Self {
-            audio_player: audio_player::AudioPlayer::new(),
+            audio_player: audio_player::AudioPlayer::new().expect("Unable to create audio player"),
             queue: Vec::new(),
             current: 0,
         }
@@ -24,7 +24,9 @@ impl Queue {
     pub fn play(&mut self) {
         self.audio_player.clear_queue();
         let file = File::open(self.queue[self.current].path()).expect("Unable to read file");
-        self.audio_player.add_track_to_queue(file);
+        self.audio_player
+            .add_track_to_queue(file)
+            .expect("Unable to add track");
     }
 
     pub fn pause(&mut self) {

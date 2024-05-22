@@ -1,5 +1,5 @@
 use rodio;
-use std::{fs::File, io::BufReader, path::PathBuf, time::Duration};
+use std::{fs::File, io::BufReader, time::Duration};
 
 pub struct AudioPlayer {
     stream: rodio::OutputStream,
@@ -8,15 +8,21 @@ pub struct AudioPlayer {
 }
 
 impl AudioPlayer {
-    pub fn new() -> Self {
-        let (_stream, handle) =
-            rodio::OutputStream::try_default().expect("Impossible to create audio player.");
-        let sink = rodio::Sink::try_new(&handle).expect("Impossible to create audio player");
-        AudioPlayer {
-            stream: _stream,
-            stream_handle: handle,
-            sink: sink,
-        }
+    pub fn new() -> Result<Self, AudioPlayerError> {
+        let (stream, stream_handle) = match rodio::OutputStream::try_default() {
+            Ok(output_stream) => output_stream,
+            Err(e) => return Err(AudioPlayerError::new(e.to_string())),
+        };
+        let sink = match rodio::Sink::try_new(&stream_handle) {
+            Ok(sink) => sink,
+            Err(e) => return Err(AudioPlayerError::new(e.to_string())),
+        };
+
+        Ok(AudioPlayer {
+            stream,
+            stream_handle,
+            sink,
+        })
     }
 
     pub fn volume(&self) -> f32 {
@@ -27,10 +33,14 @@ impl AudioPlayer {
         self.sink.set_volume(value);
     }
 
-    pub fn add_track_to_queue(&self, file: File) {
-        self.sink.append(
-            rodio::Decoder::new(BufReader::new(file)).expect("Impossible to decode the file."),
-        );
+    pub fn add_track_to_queue(&self, file: File) -> Result<(), AudioPlayerError> {
+        let dc = match rodio::Decoder::new(BufReader::new(file)) {
+            Ok(dc) => dc,
+            Err(e) => return Err(AudioPlayerError::new(e.to_string())),
+        };
+        self.sink.append(dc);
+
+        Ok(())
     }
 
     pub fn resume(&self) {
@@ -41,10 +51,11 @@ impl AudioPlayer {
         self.sink.pause();
     }
 
-    pub fn seek(&self, position: Duration) {
-        self.sink
-            .try_seek(position)
-            .expect("Unable to seek to this position.");
+    pub fn seek(&self, position: Duration) -> Result<(), AudioPlayerError> {
+        match self.sink.try_seek(position) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(AudioPlayerError::new(e.to_string())),
+        }
     }
 
     pub fn clear_queue(&self) {
@@ -65,6 +76,7 @@ impl AudioPlayer {
     }
 }
 
+#[derive(Debug)]
 pub struct AudioPlayerError {
     message: String,
 }
@@ -74,9 +86,7 @@ impl AudioPlayerError {
         &self.message
     }
 
-    pub fn new(message: &str) -> Self {
-        AudioPlayerError {
-            message: message.to_string(),
-        }
+    pub fn new(message: String) -> Self {
+        AudioPlayerError { message }
     }
 }
