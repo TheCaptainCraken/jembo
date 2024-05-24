@@ -9,10 +9,10 @@ pub struct Queue {
 }
 
 impl Queue {
-    pub fn new() -> Self {
+    pub fn new(tracks: Vec<Track>) -> Self {
         Self {
             audio_player: audio_player::AudioPlayer::new().expect("Unable to create audio player"),
-            queue: Vec::new(),
+            queue: tracks,
             current: 0,
         }
     }
@@ -43,6 +43,11 @@ impl Queue {
         self.play();
     }
 
+    pub fn play_nth(&mut self, slot: usize) {
+        self.current = slot;
+        self.play();
+    }
+
     pub fn current(&self) -> &String {
         self.queue[self.current].name()
     }
@@ -55,7 +60,7 @@ pub struct Track {
 }
 
 impl Track {
-    pub fn new(path: PathBuf) -> Self {
+    pub fn new(path: &PathBuf) -> Self {
         let name = path
             .file_name()
             .expect("Unable to read filename.")
@@ -65,7 +70,7 @@ impl Track {
 
         Track {
             name,
-            file_path: path,
+            file_path: path.clone(),
         }
     }
 

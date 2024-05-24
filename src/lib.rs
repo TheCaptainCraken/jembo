@@ -11,4 +11,12 @@ pub fn get_music_files(path: PathBuf) -> Vec<PathBuf> {
     file_paths
 }
 
+pub fn stringify_path(path: &PathBuf) -> String {
+    path.to_str()
+        .expect("Unable to convert path to string")
+        .to_owned()
+}
 
+pub fn stringify_paths(paths: &Vec<PathBuf>) -> Vec<String> {
+    paths.iter().map(|path| stringify_path(path)).collect()
+}
