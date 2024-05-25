@@ -4,7 +4,7 @@ use std::{
     path::PathBuf,
 };
 
-use audio::queue::{Queue, Track};
+use audio::queue::{Queue, Speed, Track};
 use crossterm::{
     event::{self, KeyCode, KeyEventKind},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -20,20 +20,16 @@ use ratatui::{
 mod audio;
 
 struct App {
-    tracks: Vec<Track>,
     queue: Queue,
-    current: usize,
     list_state: ListState,
 }
 
 impl App {
     fn new(files: Vec<PathBuf>) -> Self {
         let tracks: Vec<Track> = files.iter().map(|file| Track::new(file)).collect();
-        let queue = Queue::new(tracks.clone());
+        let queue = Queue::new(tracks);
         let mut new_app = App {
-            tracks,
             queue,
-            current: 0,
             list_state: ListState::default(),
         };
         new_app.list_state.select(Some(0));
@@ -44,15 +40,16 @@ impl App {
 
 fn view(model: &mut App, frame: &mut Frame) {
     let names: Vec<String> = model
-        .tracks
+        .queue
+        .get_tracks()
         .iter()
         .map(|track| track.name().to_owned())
         .collect();
     frame.render_stateful_widget(
         List::new(names)
-            .block(Block::bordered().title("List"))
-            .style(Style::default().fg(Color::LightCyan))
-            .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+            .block(Block::bordered().title("Your music"))
+            .style(Style::default().fg(Color::Yellow))
+            .highlight_style(Style::default().add_modifier(Modifier::SLOW_BLINK))
             .highlight_symbol(">>")
             .repeat_highlight_symbol(true),
         frame.size(),
@@ -78,27 +75,40 @@ fn main() -> Result<(), Error> {
             view(&mut app, frame);
         })?;
 
-        if event::poll(std::time::Duration::from_millis(8))? {
+        if event::poll(std::time::Duration::from_millis(5))? {
             if let event::Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
+                    let current = app
+                        .list_state
+                        .selected()
+                        .expect(" something must be selected");
                     match key.code {
                         KeyCode::Char('q') => break,
-                        KeyCode::Char(' ') => app.queue.play_nth(match app.list_state.selected() {
-                            Some(nth) => nth,
-                            None => 1,
-                        }),
-                        KeyCode::Down => app.list_state.select(Some(
-                            app.list_state
-                                .selected()
-                                .expect("something must be selected")
-                                + 1,
-                        )),
-                        KeyCode::Up => app.list_state.select(Some(
-                            app.list_state
-                                .selected()
-                                .expect("something must be selected")
-                                - 1,
-                        )),
+                        KeyCode::Char(' ') => {
+                            app.queue.speed(Speed::Normal);
+                            app.queue.play_nth(current);
+                        }
+                        KeyCode::Down => {
+                            if app.queue.is_playing() {
+                                app.queue.pause();
+                            }
+                            if current < app.queue.get_queue_length() - 1 {
+                                app.list_state.select(Some(current + 1))
+                            }
+                        }
+                        KeyCode::Up => {
+                            if app.queue.is_playing() {
+                                app.queue.pause();
+                            }
+                            if current > 0 {
+                                app.list_state.select(Some(current - 1))
+                            }
+                        }
+                        KeyCode::Left => {
+                            app.queue.speed(Speed::Slower);
+                        }
+                        KeyCode::Right => app.queue.speed(Speed::Faster),
+                        KeyCode::Esc => app.queue.speed(Speed::Normal),
                         _ => (),
                     };
                 }

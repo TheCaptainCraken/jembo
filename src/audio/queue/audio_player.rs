@@ -74,6 +74,16 @@ impl AudioPlayer {
     pub fn go_next(&self) {
         self.sink.skip_one();
     }
+
+    pub fn set_speed(&self, speed: f32) {
+        if speed > 0.0 {
+            self.sink.set_speed(speed);
+        }
+    }
+
+    pub fn speed(&self) -> f32 {
+        self.sink.speed()
+    }
 }
 
 #[derive(Debug)]

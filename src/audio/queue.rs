@@ -8,6 +8,12 @@ pub struct Queue {
     current: usize,
 }
 
+pub enum Speed {
+    Faster,
+    Slower,
+    Normal,
+}
+
 impl Queue {
     pub fn new(tracks: Vec<Track>) -> Self {
         Self {
@@ -33,6 +39,10 @@ impl Queue {
         self.audio_player.pause();
     }
 
+    pub fn resume(&mut self) {
+        self.audio_player.resume();
+    }
+
     pub fn play_next(&mut self) {
         self.current += 1;
         self.play();
@@ -50,6 +60,30 @@ impl Queue {
 
     pub fn current(&self) -> &String {
         self.queue[self.current].name()
+    }
+
+    pub fn get_tracks(&self) -> &Vec<Track> {
+        &self.queue
+    }
+
+    pub fn get_queue_length(&self) -> usize {
+        self.queue.len()
+    }
+
+    pub fn is_playing(&self) -> bool {
+        !self.audio_player.is_paused()
+    }
+
+    pub fn speed(&self, speed: Speed) {
+        match speed {
+            Speed::Faster => self
+                .audio_player
+                .set_speed(self.audio_player.speed() + 0.025),
+            Speed::Slower => self
+                .audio_player
+                .set_speed(self.audio_player.speed() - 0.025),
+            Speed::Normal => self.audio_player.set_speed(1.0),
+        }
     }
 }
 
